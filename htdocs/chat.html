@@ -1,0 +1,147 @@
+<!DOCTYPE html>
+<html lang='en'>
+<head>
+	<title>PHP Websockets Chat Demo</title>
+	<meta name='viewport' content='width=device-width, initial-scale=1.0' />
+	<meta name='ROBOTS' content='ALL' />
+	<meta charset="UTF-8" />
+	<script src='/jquery.min.js'></script>
+	<script src='/bootstrap.min.js'></script>
+	<link href='/bootstrap-combined.min.css' rel='styleSheet' type='text/css' />
+</head>
+
+<script type="text/javascript">
+var ws_url = 'ws://'+window.location.hostname+':8000/chat';
+var conn = new WebSocket(ws_url);
+var msg_num = 0;
+var user_color = "000000";
+var user_name = "Me";
+
+conn.onopen = function() {
+	display_message("<b>SUCCESS: Established connection to chat server</b>");
+}
+conn.onerror = function() {
+	display_message("<b>ERROR: Connection to chat server failed</b>");
+}
+conn.onclose = function() {
+	display_message("<b>ERROR: Connection closed</b>");
+}
+
+conn.onmessage = function(e) {
+	msg_num++;
+	
+	var data = $.parseJSON(e.data);
+	var message = "";
+	var style = "";
+	
+	switch (data.type) {
+		case "chat":
+			if (data.from != user_name) {
+				message += "<b>["+data.from+"]</b> ";
+				message += escape_html(data.message);
+				style += "color: #"+data.color+";";
+			}
+		break;
+		
+		case "auth":
+			if (data.valid == true) {
+				$("#auth").css("display", "none");
+				$("#input").css("display", "block");
+				$("#input-message").focus();
+				
+				user_name = data.name;
+				user_color = data.color;
+				
+				display_message("You are connected as: " + user_name, "font-style: italic;");
+			}
+		break;
+		
+		case "error":
+			message = "ERROR: " + data.error;
+			style = "font-weight: bold; color: red;";
+		break;
+		
+		default:
+			message = "Unknown message type: " + escape_html(data.type);
+		break;
+	}
+	
+	if (message != "") {
+		display_message(message, style);
+	}
+}
+
+function escape_html(str) {
+	return $("<div/>").text(str).html();
+}
+
+function send_chat() {
+	var message = $("#input-message").val();
+	$("#input-message").val("").focus();
+	send_message({
+		"type": "chat",
+		"message": message
+	});
+	display_message("<b>[" + user_name + "]</b> " + message, "font-style: italic; color: #" + user_color);
+}
+
+function send_message(payload) {
+	conn.send(JSON.stringify(payload));
+}
+
+function display_message(msg, style) {
+	var div = "<div id='msg" + msg_num + "'";
+	if (style !== "") div += " style='" + style + "'";
+	div += "/>\n";
+	$("#output").prepend($(div).html(msg));
+	$("#msg"+msg_num).show(300);
+}
+
+function authenticate() {
+	send_message({
+		"type": "auth",
+		"name": $("#auth-name").val(),
+		"color": $("#auth-color").val()
+	});
+}
+
+$(function() {
+	$("#input-message").on("keypress", function(e) {
+		if (e.keyCode === 13) {
+			send_chat();
+		}
+	});
+	display_message("Connecting to: " + ws_url, "font-weight: bold");
+});
+</script>
+
+<style type="text/css">
+div#output > div {
+	border-top: 1px solid #d0d0d0;
+	display: none;
+}
+div#output > div:first-child { border-top: none; }
+div#input { display: none; }
+div#output, input#input-message { font-size: 140%; }
+</style>
+
+<body>
+<div id="output" style="height: 500px"></div>
+
+<div id="auth" class="form-inline">
+	<label>Display name:</label>
+	<input type="text" class="span2" id="auth-name" value="" />
+	
+	<label>Color:</label>
+	<input type="text" class="span1" id="auth-color" value="#000000" />
+	
+	<a href="javascript:void(0)" onclick="authenticate(); return false;" class="btn btn-primary">Start</a>
+</div>
+
+<div id="input">
+	<input type="text" class="span8" id="input-message" value="" placeholder="Enter your message here, then press Enter" />
+</div>
+
+
+</body>
+</html>

@@ -1,0 +1,15 @@
+{
+	"autoload": {
+		"psr-4": {
+			"App\\": "app/"
+		}
+	},
+	"require": {
+		"php": ">7.0",
+		"amphp/http-server": "*",
+		"amphp/http-server-static-content": "*",
+		"amphp/http-server-router": "*",
+		"amphp/log": "*",
+		"amphp/websocket-server": "*"
+	}
+}
