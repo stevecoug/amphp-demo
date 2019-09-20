@@ -60,9 +60,10 @@ class Chat extends Websocket {
 		];
 		$this->clients[$client_id] = $info;
 		
-		$color_name = array_keys($this->possible_colors)[($client_id % 5)];
+        $num_clients = count($this->clients);
+		$color_name = array_keys($this->possible_colors)[($num_clients % 5)];
 		$color_value = $this->possible_colors[$color_name];
-		$name = "$color_name " . $this->possible_names[($client_id % 7)];
+		$name = "$color_name " . $this->possible_names[($num_clients % 7)];
 		$this->setupAuth($client_id, $name, $color_value, $info);
 		
 		echo "WS CONNECTED #$client_id: $name ($color_value)\n";
